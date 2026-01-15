@@ -1,0 +1,498 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
+
+const API = "http://localhost:3001/api";
+const BACKEND = "http://localhost:3001";
+
+const fileUrl = (p) => (p ? `${BACKEND}/${p}` : "");
+
+function fmt(d) {
+  if (!d) return "—";
+  try {
+    return new Date(d).toLocaleString();
+  } catch {
+    return String(d);
+  }
+}
+
+function normalize(v) {
+  if (v == null || v === "") return "—";
+  if (Array.isArray(v)) return v.join(", ");
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}
+
+// detect images
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif"];
+function isImage(filename) {
+  if (!filename) return false;
+  const ext = filename.split(".").pop()?.toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext);
+}
+
+function AttachmentThumbnail({ attachment }) {
+  if (!attachment) return null;
+  const url = fileUrl(attachment.storage_path);
+
+  if (!isImage(attachment.filename)) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        className="text-sky-700 hover:underline text-xs"
+        title={attachment.filename}
+      >
+        {attachment.filename}
+      </a>
+    );
+  }
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="relative inline-block group"
+      title={attachment.filename}
+    >
+      <img
+        src={url}
+        alt={attachment.filename}
+        className="h-10 w-10 object-cover rounded-xl border border-slate-200 transition-transform duration-200 group-hover:scale-105"
+        loading="lazy"
+      />
+    </a>
+  );
+}
+
+function AttachCell({ attachments }) {
+  if (!Array.isArray(attachments) || attachments.length === 0) {
+    return <span className="text-slate-400">—</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {attachments.map((a) => (
+        <AttachmentThumbnail
+          key={a.id ?? `${a.filename}-${a.storage_path}`}
+          attachment={a}
+        />
+      ))}
+    </div>
+  );
+}
+
+// -------------------- Reject modal --------------------
+function RejectModal({
+  open,
+  title = "Reject action",
+  message = "Please provide a rejection reason (required).",
+  confirmText = "Confirm reject",
+  cancelText = "Cancel",
+  onConfirm,
+  onCancel,
+  loading,
+  value,
+  setValue,
+}) {
+  const [localErr, setLocalErr] = useState("");
+
+  useEffect(() => {
+    if (!open) {
+      setLocalErr("");
+      setValue?.("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  if (!open) return null;
+
+  const canConfirm = value.trim().length >= 3 && !loading;
+
+  function handleConfirm() {
+    const v = value.trim();
+    if (v.length < 3) {
+      setLocalErr("Reject reason is required.");
+      return;
+    }
+    setLocalErr("");
+    onConfirm(v);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
+        onClick={loading ? undefined : onCancel}
+      />
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        className={[
+          "relative w-full max-w-md",
+          "rounded-3xl border bg-white/95 shadow-2xl",
+          "border-slate-200 overflow-hidden",
+          "animate-[pop_.14s_ease-out]",
+        ].join(" ")}
+      >
+        <div className="h-1 w-full bg-gradient-to-r from-red-500 via-rose-500 to-orange-400" />
+
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <div
+              className={[
+                "shrink-0 h-12 w-12 rounded-2xl border flex items-center justify-center",
+                "bg-red-50 border-red-200 text-red-700",
+              ].join(" ")}
+              aria-hidden="true"
+            >
+              ❌
+            </div>
+
+            <div className="min-w-0">
+              <div className="text-lg font-extrabold text-slate-900 leading-snug">
+                {title}
+              </div>
+              <div className="mt-1 text-sm text-slate-600 leading-relaxed">
+                {message}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={loading}
+              className={[
+                "ml-auto h-9 w-9 rounded-2xl border border-slate-200",
+                "text-slate-600 hover:bg-slate-50",
+                "focus:outline-none focus:ring-4 focus:ring-slate-200/70",
+                loading ? "opacity-60 cursor-not-allowed" : "",
+              ].join(" ")}
+              title="Close"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="mt-4">
+            <label className="text-sm font-semibold text-slate-700">
+              Reject reason <span className="text-red-600">*</span>
+            </label>
+            <textarea
+              value={value}
+              onChange={(e) => {
+                setValue(e.target.value);
+                if (localErr) setLocalErr("");
+              }}
+              rows={5}
+              disabled={loading}
+              placeholder="Write the reason…"
+              className={[
+                "mt-2 w-full rounded-2xl border p-3 text-sm outline-none",
+                localErr
+                  ? "border-red-300 focus:ring-4 focus:ring-red-100"
+                  : "border-slate-200 focus:ring-4 focus:ring-slate-200/70",
+                loading ? "opacity-80" : "",
+              ].join(" ")}
+            />
+            {localErr ? (
+              <div className="mt-2 text-sm font-semibold text-red-700">
+                {localErr}
+              </div>
+            ) : (
+              <div className="mt-2 text-xs text-slate-500">
+                Minimum 3 characters.
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={loading}
+              className={[
+                "px-4 py-2.5 rounded-2xl text-sm font-semibold",
+                "border border-slate-300",
+                "bg-slate-100 text-slate-600",
+                "hover:bg-slate-200 hover:text-slate-700",
+                "active:bg-slate-300 transition-colors duration-150",
+                "focus:outline-none focus:ring-4 focus:ring-slate-300/60",
+                loading ? "opacity-50 cursor-not-allowed" : "",
+              ].join(" ")}
+            >
+              {cancelText}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={!canConfirm}
+              className={[
+                "px-4 py-2.5 rounded-2xl text-sm font-semibold",
+                "focus:outline-none focus:ring-4",
+                "bg-red-600 text-white hover:bg-red-700 focus:ring-red-200",
+                !canConfirm ? "opacity-70 cursor-not-allowed" : "",
+              ].join(" ")}
+            >
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block h-4 w-4 rounded-full border-2 border-white/60 border-t-white animate-spin" />
+                  Processing...
+                </span>
+              ) : (
+                confirmText
+              )}
+            </button>
+          </div>
+        </div>
+
+        <style>{`
+          @keyframes pop {
+            from { transform: translateY(8px) scale(.98); opacity: .0; }
+            to   { transform: translateY(0)   scale(1);   opacity: 1; }
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
+// -------------------- Page --------------------
+export default function FinalReviewPage() {
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token") || "";
+  const llcId = useMemo(() => Number(id), [id]);
+
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+
+  async function load() {
+    try {
+      setErr("");
+      setData(null);
+
+      if (!llcId || !token) throw new Error("Invalid link (missing id/token).");
+
+      const res = await fetch(
+        `${API}/llc/${llcId}/final-review?token=${encodeURIComponent(token)}`
+      );
+      const js = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(js?.error || "Failed to load LLC");
+
+      setData(js);
+    } catch (e) {
+      setErr(e?.message || "Error");
+    }
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [llcId, token]);
+
+  async function decide(action, reason = "") {
+    try {
+      setBusy(true);
+      setErr("");
+
+      const res = await fetch(`${API}/llc/${llcId}/final-review/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          action, // "approve" | "reject"
+          reason: action === "reject" ? reason : "",
+        }),
+      });
+
+      const js = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(js?.error || "Action failed");
+
+      await load();
+    } catch (e) {
+      setErr(e?.message || "Error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (err) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-8">
+        <div className="mx-auto max-w-3xl rounded-2xl bg-white border border-slate-200 p-6">
+          <h1 className="text-xl font-bold text-slate-800">Final Review</h1>
+          <p className="mt-3 text-red-600 font-semibold">{err}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-slate-50 p-8">
+        <div className="mx-auto max-w-3xl rounded-2xl bg-white border border-slate-200 p-6">
+          <div className="text-slate-600">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  const decided = ["APPROVED", "REJECTED"].includes(data.final_decision);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 p-8">
+      <div className="mx-auto max-w-4xl space-y-6">
+        {/* Header */}
+        <div className="rounded-3xl bg-white shadow-xl shadow-sky-100 border border-slate-100 overflow-hidden">
+          <div className="px-8 py-6 bg-gradient-to-r from-sky-700 to-sky-900">
+            <h1 className="text-2xl font-bold text-white">Final Review</h1>
+            <p className="text-white/80 text-sm mt-1">LLC #{data.id}</p>
+          </div>
+
+          <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 text-sm text-slate-700">
+            <div className="flex flex-wrap gap-x-8 gap-y-2">
+              <div>
+                <b>Plant:</b> {normalize(data.plant)}
+              </div>
+              <div>
+                <b>Customer:</b> {normalize(data.customer)}
+              </div>
+              <div>
+                <b>Created:</b> {fmt(data.created_at)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="rounded-3xl bg-white shadow-xl shadow-sky-100 border border-slate-100 p-8 space-y-5">
+          <div>
+            <div className="text-sm font-semibold text-slate-700">
+              Problem description
+            </div>
+            <div className="mt-1 text-slate-800">{normalize(data.problem_short)}</div>
+          </div>
+
+          <div>
+            <div className="text-sm font-semibold text-slate-700">
+              Detailed problem
+            </div>
+            <div className="mt-1 text-slate-800 whitespace-pre-wrap">
+              {normalize(data.problem_detail)}
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100">
+            <div className="text-sm font-semibold text-slate-700">
+              LLC generated (DOCX)
+            </div>
+            <div className="mt-2">
+              {data.generated_llc ? (
+                <a
+                  href={fileUrl(data.generated_llc)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sky-700 font-semibold hover:underline"
+                >
+                  Download DOCX
+                </a>
+              ) : (
+                <span className="text-slate-400">—</span>
+              )}
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100">
+            <div className="text-sm font-semibold text-slate-700">Attachments</div>
+            <div className="mt-2">
+              <AttachCell attachments={data.attachments} />
+            </div>
+          </div>
+
+          {/* Decision */}
+          <div className="pt-4 border-t border-slate-100">
+            {decided ? (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                <div className="text-slate-800 font-bold">
+                  Decision:{" "}
+                  <span
+                    className={
+                      data.final_decision === "APPROVED"
+                        ? "text-emerald-700"
+                        : "text-red-700"
+                    }
+                  >
+                    {data.final_decision}
+                  </span>
+                </div>
+
+                <div className="mt-2 text-sm text-slate-700">
+                  {/* ✅ Ton backend met final_validation_date, pas final_decision_at */}
+                  <div>
+                    <b>Final validation date:</b> {fmt(data.final_validation_date)}
+                  </div>
+
+                  {data.final_decision === "REJECTED" ? (
+                    <div className="mt-2">
+                      <b>Reject reason:</b> {normalize(data.final_reject_reason)}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="text-sm font-semibold text-slate-700">Action</div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <button
+                    disabled={busy}
+                    onClick={() => decide("approve")}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    ✅ Valider
+                  </button>
+
+                  <button
+                    disabled={busy}
+                    onClick={() => setRejectOpen(true)}
+                    className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-60"
+                  >
+                    ❌ Refuser
+                  </button>
+                </div>
+
+                <p className="mt-3 text-xs text-slate-500">
+                  Ce lien est temporaire. Une fois validé/refusé, l’action ne peut
+                  pas être refaite.
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <RejectModal
+        open={rejectOpen}
+        title="Reject final validation"
+        message="Please provide a rejection reason (required)."
+        confirmText="Confirm reject"
+        cancelText="Cancel"
+        loading={busy}
+        value={rejectReason}
+        setValue={setRejectReason}
+        onCancel={() => setRejectOpen(false)}
+        onConfirm={async (reason) => {
+          await decide("reject", reason);
+          setRejectOpen(false);
+        }}
+      />
+    </div>
+  );
+}
