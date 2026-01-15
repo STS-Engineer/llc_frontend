@@ -12,6 +12,7 @@ import LlcForm from "./pages/LlcForm";
 import KpisPage from "./pages/Kpis";
 
 import PmReviewPage from "./PmReviewPage";
+import FinalReviewPage from "./FinalReviewPage";
 import LlcEdit from "./pages/LlcEdit";
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/llc/new" element={<LlcForm />} />
           <Route path="/kpis" element={<KpisPage />} />
           <Route path="/pm-review/:id" element={<PmReviewPage />} />
+          <Route path="/final-review/:id" element={<FinalReviewPage />} />
           <Route path="/llc/:id/edit" element={<LlcEdit />} />
         </Route>
       </Route>
