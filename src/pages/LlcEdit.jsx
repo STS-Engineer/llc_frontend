@@ -914,9 +914,12 @@ export default function LlcEditTailwind() {
         }
         const data = await res.json();
 
-        if (data.pm_decision !== "REJECTED") {
-          throw new Error("This LLC cannot be edited unless it is REJECTED.");
+        const canEdit = data.pm_decision === "REJECTED" || data.final_decision === "REJECTED";
+
+        if (!canEdit) {
+          throw new Error("This LLC cannot be edited unless PM decision is REJECTED or Final decision is REJECTED.");
         }
+
 
         if (!alive) return;
 
@@ -1080,7 +1083,7 @@ export default function LlcEditTailwind() {
       }
 
       setSaved(await res.json());
-      setTimeout(() => navigate("/"), 600);
+      setTimeout(() => navigate("/dashboard", { replace: true }), 600);
     } catch (e) {
       setSubmitError(e?.message || "Submit failed");
     }
