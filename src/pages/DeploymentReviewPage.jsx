@@ -1,3 +1,4 @@
+// src/pages/DeploymentReviewPage.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
@@ -20,66 +21,6 @@ function normalize(v) {
   if (Array.isArray(v)) return v.join(", ");
   if (typeof v === "object") return JSON.stringify(v);
   return String(v);
-}
-
-// detect images
-const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif"];
-function isImage(filename) {
-  if (!filename) return false;
-  const ext = filename.split(".").pop()?.toLowerCase();
-  return IMAGE_EXTENSIONS.includes(ext);
-}
-
-function AttachmentThumbnail({ attachment }) {
-  if (!attachment) return null;
-  const url = fileUrl(attachment.storage_path);
-
-  if (!isImage(attachment.filename)) {
-    return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="text-sky-700 hover:underline text-xs"
-        title={attachment.filename}
-      >
-        {attachment.filename}
-      </a>
-    );
-  }
-
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="relative inline-block group"
-      title={attachment.filename}
-    >
-      <img
-        src={url}
-        alt={attachment.filename}
-        className="h-10 w-10 object-cover rounded-xl border border-slate-200 transition-transform duration-200 group-hover:scale-105"
-        loading="lazy"
-      />
-    </a>
-  );
-}
-
-function AttachCell({ attachments }) {
-  if (!Array.isArray(attachments) || attachments.length === 0) {
-    return <span className="text-slate-400">—</span>;
-  }
-  return (
-    <div className="flex flex-wrap gap-2">
-      {attachments.map((a) => (
-        <AttachmentThumbnail
-          key={a.id ?? `${a.filename}-${a.storage_path}`}
-          attachment={a}
-        />
-      ))}
-    </div>
-  );
 }
 
 // -------------------- Reject modal --------------------
@@ -125,7 +66,6 @@ function RejectModal({
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-md"
         onClick={loading ? undefined : onCancel}
       />
-
       <div
         role="dialog"
         aria-modal="true"
@@ -260,11 +200,11 @@ function RejectModal({
 }
 
 // -------------------- Page --------------------
-export default function FinalReviewPage() {
-  const { id } = useParams();
+export default function DeploymentReviewPage() {
+  const { processingId } = useParams(); // route: /dep-review/:processingId?token=...
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
-  const llcId = useMemo(() => Number(id), [id]);
+  const pid = useMemo(() => Number(processingId), [processingId]);
 
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
@@ -278,13 +218,13 @@ export default function FinalReviewPage() {
       setErr("");
       setData(null);
 
-      if (!llcId || !token) throw new Error("Invalid link (missing id/token).");
+      if (!pid || !token) throw new Error("Invalid link (missing id/token).");
 
       const res = await fetch(
-        `${API}/llc/${llcId}/final-review?token=${encodeURIComponent(token)}`
+        `${API}/dep-processing/${pid}/review?token=${encodeURIComponent(token)}`
       );
       const js = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(js?.error || "Failed to load LLC");
+      if (!res.ok) throw new Error(js?.error || "Failed to load Deployment");
 
       setData(js);
     } catch (e) {
@@ -295,14 +235,14 @@ export default function FinalReviewPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [llcId, token]);
+  }, [pid, token]);
 
   async function decide(action, reason = "") {
     try {
       setBusy(true);
       setErr("");
 
-      const res = await fetch(`${API}/llc/${llcId}/final-review/decision`, {
+      const res = await fetch(`${API}/dep-processing/${pid}/review/decision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -327,7 +267,7 @@ export default function FinalReviewPage() {
     return (
       <div className="min-h-screen bg-slate-50 p-8">
         <div className="mx-auto max-w-3xl rounded-2xl bg-white border border-slate-200 p-6">
-          <h1 className="text-xl font-bold text-slate-800">Final Review</h1>
+          <h1 className="text-xl font-bold text-slate-800">Deployment Review</h1>
           <p className="mt-3 text-red-600 font-semibold">{err}</p>
         </div>
       </div>
@@ -344,7 +284,11 @@ export default function FinalReviewPage() {
     );
   }
 
-  const decided = ["APPROVED", "REJECTED"].includes(data.final_decision);
+  // backend expected fields:
+  // data.generated_dep (pdf path)
+  // data.dep_decision ("APPROVED"|"REJECTED"|...)
+  // data.dep_decision_at, data.dep_reject_reason
+  const decided = ["APPROVED", "REJECTED"].includes(data.dep_decision);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-sky-50 p-8">
@@ -352,20 +296,22 @@ export default function FinalReviewPage() {
         {/* Header */}
         <div className="rounded-3xl bg-white shadow-xl shadow-sky-100 border border-slate-100 overflow-hidden">
           <div className="px-8 py-6 bg-gradient-to-r from-sky-700 to-sky-900">
-            <h1 className="text-2xl font-bold text-white">Final Review</h1>
-            <p className="text-white/80 text-sm mt-1">LLC #{data.id}</p>
+            <h1 className="text-2xl font-bold text-white">Deployment Review</h1>
+            <p className="text-white/80 text-sm mt-1">
+              LLC #{normalize(data.llc_id)} — Processing #{normalize(data.id)}
+            </p>
           </div>
 
           <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 text-sm text-slate-700">
             <div className="flex flex-wrap gap-x-8 gap-y-2">
               <div>
-                <b>Plant:</b> {normalize(data.plant)}
+                <b>Evidence plant:</b> {normalize(data.evidence_plant)}
               </div>
               <div>
-                <b>Customer:</b> {normalize(data.customer)}
+                <b>Applicability:</b> {normalize(data.deployment_applicability)}
               </div>
               <div>
-                <b>Created:</b> {fmt(data.created_at)}
+                <b>Deployment date:</b> {fmt(data.deployment_date)}
               </div>
             </div>
           </div>
@@ -373,15 +319,15 @@ export default function FinalReviewPage() {
 
         {/* Body */}
         <div className="rounded-3xl bg-white shadow-xl shadow-sky-100 border border-slate-100 p-8 space-y-5">
-          {data.generated_llc ? (
+          {data.generated_dep ? (
             <div className="rounded-3xl bg-white shadow-xl shadow-sky-100 border border-slate-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div className="text-sm font-semibold text-slate-700">
-                  LLC generated (PDF)
+                  Deployment generated (PDF)
                 </div>
 
                 <a
-                  href={fileUrl(data.generated_llc)}
+                  href={fileUrl(data.generated_dep)}
                   target="_blank"
                   rel="noreferrer"
                   className="text-sm font-semibold text-sky-700 hover:underline"
@@ -391,8 +337,8 @@ export default function FinalReviewPage() {
               </div>
 
               <iframe
-                src={fileUrl(data.generated_llc)}
-                title={`LLC ${data.id} PDF`}
+                src={fileUrl(data.generated_dep)}
+                title={`DEP ${data.llc_id} / ${data.evidence_plant} PDF`}
                 className="w-full h-[80vh]"
               />
             </div>
@@ -410,24 +356,23 @@ export default function FinalReviewPage() {
                   Decision:{" "}
                   <span
                     className={
-                      data.final_decision === "APPROVED"
+                      data.dep_decision === "APPROVED"
                         ? "text-emerald-700"
                         : "text-red-700"
                     }
                   >
-                    {data.final_decision}
+                    {data.dep_decision}
                   </span>
                 </div>
 
                 <div className="mt-2 text-sm text-slate-700">
-                  {/* ✅ Ton backend met final_validation_date, pas final_decision_at */}
                   <div>
-                    <b>Final validation date:</b> {fmt(data.final_validation_date)}
+                    <b>Decision date:</b> {fmt(data.dep_decision_at)}
                   </div>
 
-                  {data.final_decision === "REJECTED" ? (
+                  {data.dep_decision === "REJECTED" ? (
                     <div className="mt-2">
-                      <b>Reject reason:</b> {normalize(data.final_reject_reason)}
+                      <b>Reject reason:</b> {normalize(data.dep_reject_reason)}
                     </div>
                   ) : null}
                 </div>
@@ -465,7 +410,7 @@ export default function FinalReviewPage() {
 
       <RejectModal
         open={rejectOpen}
-        title="Reject final validation"
+        title="Reject deployment approval"
         message="Please provide a rejection reason (required)."
         confirmText="Confirm reject"
         cancelText="Cancel"

@@ -1093,7 +1093,7 @@ export default function LlcEditTailwind() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] via-white to-[#f0f9ff] py-12">
-      {saved && <SuccessToast message="Updated!" onClose={() => setSaved(null)} />}
+      {saved && <SuccessToast message="LLC updated successfully ✅" onClose={() => setSaved(null)} />}
       {submitError && <ErrorToast message={submitError} onClose={() => setSubmitError("")} />}
 
       <div className="w-full max-w-3xl space-y-6 md:ml-36">

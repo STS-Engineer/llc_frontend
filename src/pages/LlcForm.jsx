@@ -2,12 +2,14 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
 
 // =============================================
 // ✅ Plant & Validator mapping (exact strings)
 // =============================================
 const PLANT_VALIDATOR = {
   "TEST Plant": "ons.ghariani@avocarbon.com",
+  "TEST02 Plant": "ons.ghariani@avocarbon.com",
   "FRANKFURT Plant": "dagmar.ansinn@avocarbon.com",
   "KUNSHAN Plant": "allan.riegel@avocarbon.com",
   "MONTERREY Plant": "hector.olivares@avocarbon.com",
@@ -28,7 +30,7 @@ const OPTIONS = {
   product_type: ["Brush Auxiliary","Brush Micro-Brushes","Brush Starter single layer","Brush Starter dual layer","Brush Fuel pump","Brush Fuel pump carbon disk","Brush Grounding","Assembly Brush Holder","Assembly Wire harness","Assembly Electronics","Choke Rod Chokes","Choke Fuse Chokes","Choke Toroid Chokes","Choke Transformers","Seal Automotive","Seal General Industry","Seal Pool","Seal Clean Water","Seal Irrigation","Seal Washing Machine","Injection Simple injection","Injection Insert molding","Injection Insert Slip ring","Friction Thermoset Bushing","Friction Thermoplastic Bushing","Friction Bushing","Friction Rotor & Blades","Metal ring"],
   quality_detection: ["All", "Validation failure", "Final inspection", "Line inspection", "Customer Claim", "Waranty incident", "Internal test", "Add an origine"],
   application_label: ["All","Wiper-Motor","Alternators","Starter motor","Electronics","Electric pumps","Dynamic Sealing","Micro-Motors","Traction","FHP","Comfort and auxiliary motors","Power tools","Home appliances and Consumer products"],
-  product_line_label: ["All","Assembly","Injection","Chokes","Brushes","Seals"],
+  product_line_label: ["All","Assembly","Injection","Chokes","Brush","Seals", "Product"],
   editor: ["Editor 1", "Editor 2", "Editor 3"],
   plant: ["SCEET Plant","POITIERS Plant","AMIENS Plant","FRANKFURT Plant","MONTERREY Plant","CHENNAI Plant","TIANJIN Plant","ANHUI Plant", "KUNSHAN Plant"],
   failure_mode: ["Lack of continuity","High resistance","Low resistance","Low peel force","High noise","Tin thickness to thick","Tinning thickness to low","Poor brush sliding","Low pull Force","Brush thickness oversize","poor or lack leg welding","Bad laser welding extraction force","Damage","Leg Misalignment","QR code","Lack of solder","Welding","Dimension oversize","Mixed","Glue on choke legs","Cleanness","Cannot stuck the smoke","Legs deformed","Missing operation","Core fallen off","bad peeling lenth","Not selected as a supplier","Scope management","Cost mamagement","Schedule management","Integration management","Stakeholders management","communication management","Quality management","Resource management","Procurement management","Customer satisfaction","Change management","CIP"],
@@ -350,26 +352,26 @@ function SearchableSelect({ label, required, options, value, onChange, placehold
           {open ? <Icons.Search className="w-4.5 h-4.5" /> : <Icons.Chevron className="w-4.5 h-4.5" />}
         </span>
 
-        {open ? (
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={selectedLabel ? selectedLabel : placeholder}
-            className="flex-1 bg-transparent outline-none text-sm text-[#585858] placeholder:text-[#c5c5c4]"
-            onKeyDown={onKeyDownOpen}
-          />
-        ) : (
-          <div className={`flex-1 text-sm ${selectedLabel ? "text-[#585858]" : "text-[#c5c5c4]"} pointer-events-none`}>
-            {selectedLabel || placeholder}
-          </div>
-        )}
+{open ? (
+  <input
+    ref={inputRef}
+    value={query}
+    onChange={(e) => setQuery(e.target.value)}
+    placeholder={selectedLabel ? selectedLabel : placeholder}
+    className="flex-1 bg-transparent outline-none text-sm text-[#585858] placeholder:text-[#c5c5c4]"
+    onKeyDown={onKeyDownOpen}
+  />
+) : (
+  <div className={`flex-1 text-sm ${selectedLabel ? "text-[#585858]" : "text-[#c5c5c4]"}`}>
+    {selectedLabel || placeholder}
+  </div>
+)}
 
-        <span className={`text-[#585858] transition-transform duration-200 ${open ? "rotate-180" : ""} pointer-events-none`}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
+<span className={`text-[#585858] transition-transform duration-200 ${open ? "rotate-180" : ""}`}>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+</span>
       </div>
 
       {open && (
@@ -626,6 +628,7 @@ function RootCauseModal({ open, onClose, mode = "add", initialData, initialFiles
     px-4 py-3 text-sm text-[#585858]
     placeholder:text-[#c5c5c4]
     outline-none
+    cursor-text
     transition-all duration-200
     hover:border-[#046eaf]/50
     focus:border-[#046eaf] focus:ring-4 focus:ring-[#046eaf]/10
@@ -805,6 +808,7 @@ export default function LlcFormTailwind() {
   const [goodPartFiles, setGoodPartFiles] = useState([]);
   const [situationBeforeFiles, setSituationBeforeFiles] = useState([]);
   const [situationAfterFiles, setSituationAfterFiles] = useState([]);
+  const navigate = useNavigate();
 
   // ✅ read user from localStorage (must be saved at signin)
   const user = useMemo(() => {
@@ -939,6 +943,9 @@ export default function LlcFormTailwind() {
       }
 
       setSaved(await res.json());
+      setTimeout(() => { 
+        navigate("/qualityLessonLearned");
+      }, 2000);
     } catch (e) {
       setSubmitError(e?.message || "Submit failed");
     }
@@ -946,10 +953,10 @@ export default function LlcFormTailwind() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] via-white to-[#f0f9ff] py-12">
-      {saved && <SuccessToast message="Saved!" onClose={() => setSaved(null)} />}
+      {saved && <SuccessToast message="LLC submitted successfully ✅" onClose={() => setSaved(null)} />}
       {submitError && <ErrorToast message={submitError} onClose={() => setSubmitError("")} />}
 
-      <div className="w-full max-w-3xl space-y-6 md:ml-36">
+      <div className="w-full max-w-3xl mx-auto space-y-6 px-4">
         {/* Header Card */}
         <div className="rounded-3xl bg-white shadow-xl shadow-[#046eaf]/5 overflow-hidden animate-fade-in-up">
           <div className="relative px-8 py-8 bg-gradient-to-r from-[#046eaf] via-[#0e4e78] to-[#046eaf] bg-[length:200%_100%]">

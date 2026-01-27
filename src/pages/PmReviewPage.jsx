@@ -9,7 +9,7 @@ const fileUrl = (p) => (p ? `${BACKEND}/${p}` : "");
 function fmt(d) {
   if (!d) return "—";
   try {
-    return new Date(d).toLocaleString();
+    return new Date(d).toLocaleDateString();
   } catch {
     return String(d);
   }
@@ -306,48 +306,34 @@ export default function PmReviewPage() {
 
         {/* Body */}
         <div className="rounded-3xl bg-white shadow-xl shadow-sky-100 border border-slate-100 p-8 space-y-5">
-          <div>
-            <div className="text-sm font-semibold text-slate-700">
-              Problem description
-            </div>
-            <div className="mt-1 text-slate-800">{data.problem_short || "—"}</div>
-          </div>
+          {data.generated_llc ? (
+            <div className="rounded-3xl bg-white shadow-xl shadow-sky-100 border border-slate-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-700">
+                  LLC generated (PDF)
+                </div>
 
-          <div>
-            <div className="text-sm font-semibold text-slate-700">
-              Detailed problem
-            </div>
-            <div className="mt-1 text-slate-800 whitespace-pre-wrap">
-              {data.problem_detail || "—"}
-            </div>
-          </div>
-
-          <div>
-            <div className="text-sm font-semibold text-slate-700">Conclusions</div>
-            <div className="mt-1 text-slate-800 whitespace-pre-wrap">
-              {data.conclusions || "—"}
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-slate-100">
-            <div className="text-sm font-semibold text-slate-700">
-              LLC generated (DOCX)
-            </div>
-            <div className="mt-2">
-              {data.generated_llc ? (
                 <a
                   href={fileUrl(data.generated_llc)}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sky-700 font-semibold hover:underline"
+                  className="text-sm font-semibold text-sky-700 hover:underline"
                 >
-                  Download DOCX
+                  Open in new tab
                 </a>
-              ) : (
-                <span className="text-slate-400">—</span>
-              )}
+              </div>
+
+              <iframe
+                src={fileUrl(data.generated_llc)}
+                title={`LLC ${data.id} PDF`}
+                className="w-full h-[80vh]"
+              />
             </div>
-          </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-slate-600">
+              PDF not generated yet.
+            </div>
+          )}
 
           {/* Decision */}
           <div className="pt-4 border-t border-slate-100">
@@ -389,7 +375,7 @@ export default function PmReviewPage() {
                     onClick={() => decide("approve")}
                     className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60"
                   >
-                    ✅ Valider
+                    ✅ Approve
                   </button>
 
                   <button
@@ -397,13 +383,12 @@ export default function PmReviewPage() {
                     onClick={() => setRejectOpen(true)}
                     className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-60"
                   >
-                    ❌ Refuser
+                    ❌ Reject
                   </button>
                 </div>
 
                 <p className="mt-3 text-xs text-slate-500">
-                  Ce lien est temporaire. Une fois validé/refusé, l’action ne peut
-                  pas être refaite.
+                  This link is temporary. Once approved or rejected, the action cannot be performed again.
                 </p>
               </>
             )}

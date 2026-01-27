@@ -14,7 +14,7 @@ function LinkItem({ to, icon: Icon, children, onClick }) {
       onClick={onClick}
       className={({ isActive }) =>
         cx(
-          "group flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold transition-all duration-200",
+          "group flex items-center gap-1 px-3 py-2 rounded-2xl font-semibold text-sm transition-all duration-200",
           isActive
             ? "bg-white text-sky-900 shadow-md shadow-sky-900/10"
             : "text-white/90 hover:bg-white/10 hover:text-white"
@@ -117,14 +117,37 @@ const Icons = {
   ),
 };
 
+function roleLabel(role) {
+  if (role === "quality_manager") return "Quality Manager";
+  if (role === "plant_manager") return "Plant Manager";
+  return role || "Unknown role";
+}
+
 function SidebarContent({ user, onNavigate, onSignOut }) {
   return (
     <div className="h-full flex flex-col">
-      <div className="p-5">
+      <div className="p-4">
         <div className="rounded-3xl bg-white/10 border border-white/15 p-4 text-white">
           <div className="text-lg font-bold">LLC App</div>
-          <div className="text-xs text-white/80 mt-1 truncate">
-            {user?.name || user?.email || "Connected"}
+          <div className="mt-1 flex items-center gap-2 truncate">
+            <span className="text-xs text-white/80 truncate">
+              {user?.name || user?.email || "Connected"}
+            </span>
+
+            {user?.role && (
+              <>
+                {/* dot */}
+                <span className="text-white/40 text-xs select-none">•</span>
+
+                <span
+                  className="shrink-0 inline-flex items-center rounded-full
+                            bg-white/15 border border-white/20
+                            px-2 py-0.5 text-[11px] font-semibold text-white/90"
+                >
+                  {roleLabel(user.role)}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -133,14 +156,16 @@ function SidebarContent({ user, onNavigate, onSignOut }) {
         </div>
 
         <nav className="mt-2 space-y-2">
-          <LinkItem to="/dashboard" icon={Icons.Home} onClick={onNavigate}>
+          <LinkItem to="/qualityLessonLearned" icon={Icons.Home} onClick={onNavigate}>
             Quality Lesson Learned
           </LinkItem>
-          <LinkItem to="/llc/new" icon={Icons.Plus} onClick={onNavigate}>
-            LLC Form
-          </LinkItem>
-          <LinkItem to="/kpis" icon={Icons.Dashboard} onClick={onNavigate}>
-            Dashboard
+          {user?.role === "quality_manager" && (
+            <LinkItem to="/llc/new" icon={Icons.Plus} onClick={onNavigate}>
+              LLC Form
+            </LinkItem>
+          )}
+          <LinkItem to="/dashboard" icon={Icons.Dashboard} onClick={onNavigate}>
+            KPIs Dashboard
           </LinkItem>
         </nav>
       </div>
@@ -169,10 +194,10 @@ export default function Layout() {
 
   const onSignOut = () => {
     signOut();
-    navigate("/signup", { replace: true });
+    navigate("/signin", { replace: true });
   };
 
-  const SIDEBAR_W = "w-72"; // 18rem
+  const SIDEBAR_W = "w-64"; // 18rem
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-slate-50">
@@ -230,7 +255,7 @@ export default function Layout() {
       )}
 
       {/* Main content */}
-      <main className={cx("min-h-screen", "pt-20 md:pt-6", "px-6", "md:pl-72")}>
+      <main className={cx("min-h-screen", "pt-20 md:pt-6", "px-6", "md:pl-64")}>
         <Outlet />
       </main>
     </div>

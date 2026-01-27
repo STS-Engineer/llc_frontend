@@ -7,19 +7,21 @@ import SignIn from "./pages/SignIn";
 import ProtectedRoute from "./ProtectedRoute";
 import Layout from "./Layout";
 
-import Dashboard from "./pages//Dashboard";
+import QualityLessonLearned from "./pages/QualityLessonLearned";
 import LlcForm from "./pages/LlcForm";
-import KpisPage from "./pages/Kpis";
+import Dashboard from "./pages/Dashboard";
 
-import PmReviewPage from "./PmReviewPage";
-import FinalReviewPage from "./FinalReviewPage";
+import PmReviewPage from "./pages/PmReviewPage";
+import FinalReviewPage from "./pages/FinalReviewPage";
 import LlcEdit from "./pages/LlcEdit";
+
+import DeploymentReviewPage from "./pages/DeploymentReviewPage";
 
 export default function App() {
   return (
     <Routes>
       {/* ✅ au démarrage de l'app */}
-      <Route path="/" element={<Navigate to="/signup" replace />} />
+      <Route path="/" element={<Navigate to="/signin" replace />} />
 
       {/* public */}
       <Route path="/signup" element={<SignUp />} />
@@ -28,17 +30,20 @@ export default function App() {
       {/* protected + sidebar layout */}
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
+          <Route path="/qualityLessonLearned" element={<QualityLessonLearned />} />
+          <Route element={<ProtectedRoute allowedRoles={["quality_manager"]} />}>
+            <Route path="/llc/new" element={<LlcForm />} />
+            <Route path="/llc/:id/edit" element={<LlcEdit />} />
+          </Route>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/llc/new" element={<LlcForm />} />
-          <Route path="/kpis" element={<KpisPage />} />
           <Route path="/pm-review/:id" element={<PmReviewPage />} />
           <Route path="/final-review/:id" element={<FinalReviewPage />} />
-          <Route path="/llc/:id/edit" element={<LlcEdit />} />
+          <Route path="/dep-review/:processingId" element={<DeploymentReviewPage />} />
         </Route>
       </Route>
 
       {/* fallback */}
-      <Route path="*" element={<Navigate to="/signup" replace />} />
+      <Route path="*" element={<Navigate to="/signin" replace />} />
     </Routes>
   );
 }

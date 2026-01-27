@@ -10,6 +10,7 @@ export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [plant, setPlant] = useState(""); 
+  const [role, setRole] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -18,8 +19,8 @@ export default function SignUp() {
     setErr("");
     setLoading(true);
     try {
-      await signUp({ name, email, password, plant }); 
-      navigate("/dashboard", { replace: true });
+      await signUp({ name, email, password, plant, role }); 
+      navigate("/qualityLessonLearned", { replace: true });
     } catch (e) {
       setErr(e?.message || "Sign up failed");
     } finally {
@@ -86,6 +87,22 @@ export default function SignUp() {
               <option value="Plant 8">KUNSHAN Plant</option>
               <option value="Plant 9">SAME Plant</option>
               <option value="Plant 10">POITIERS Plant</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="text-sm font-semibold text-slate-700">Role</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              required
+              className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 bg-white outline-none focus:ring-2 focus:ring-sky-200"
+            >
+              <option value="" disabled>
+                Select a role
+              </option>
+              <option value="plant_manager">Plant Manager</option>
+              <option value="quality_manager">Quality Manager</option>
             </select>
           </div>
 

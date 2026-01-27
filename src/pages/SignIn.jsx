@@ -1,9 +1,12 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth";
 
 export default function SignIn() {
   const navigate = useNavigate();
+  const [sp] = useSearchParams();
+  const redirect = sp.get("redirect");
+
   const { signIn } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -17,7 +20,7 @@ export default function SignIn() {
     setLoading(true);
     try {
       await signIn({ email, password });
-      navigate("/dashboard", { replace: true });
+      navigate(redirect || "/qualityLessonLearned", { replace: true });
     } catch (e) {
       setErr(e?.message || "Sign in failed");
     } finally {
