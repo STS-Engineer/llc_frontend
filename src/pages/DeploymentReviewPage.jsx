@@ -2,8 +2,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
-const API = "http://localhost:3001/api";
-const BACKEND = "http://localhost:3001";
+const API = "https://llc-back.azurewebsites.net/api";
+const BACKEND = "https://llc-back.azurewebsites.net";
 
 const fileUrl = (p) => (p ? `${BACKEND}/${p}` : "");
 
