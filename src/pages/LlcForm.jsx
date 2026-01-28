@@ -929,7 +929,7 @@ export default function LlcFormTailwind() {
 
       const token = localStorage.getItem("token") || "";
 
-      const res = await fetch("http://localhost:3001/api/llc", {
+      const res = await fetch("https://llc-back.azurewebsites.net/api/llc", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
