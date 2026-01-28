@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Search, RefreshCcw, Filter, ChevronRight, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 
-const API = "http://localhost:3001/api";
-const BACKEND = "http://localhost:3001";
+const API = "https://llc-back.azurewebsites.net/api";
+const BACKEND = "https://llc-back.azurewebsites.net";
 
 // -------------------- helpers --------------------
 async function fetchWithAuth(url, options = {}) {
