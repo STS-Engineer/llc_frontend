@@ -16,7 +16,7 @@ import {
   LabelList,
 } from "recharts";
 
-const API = "http://localhost:3001/api";
+const API = "https://llc-back.azurewebsites.net/api";
 
 // -------------------- helpers --------------------
 async function fetchWithAuth(url, options = {}) {
